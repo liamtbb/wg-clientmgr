@@ -21,6 +21,13 @@ LBLUE='\033[1;34m'
 YELLOW='\033[0;33m'
 NC='\033[0m' # No Color
 
+#load vpn server address
+if [[ $4 -eq 0 ]] ; then
+  echo ""
+  else
+    $serveraddr=$endpoint
+fi
+
 #flag for help and examples -h|--h
 if [[ "$name" = "-h" || "$name" = "--h" ]] ; then
   echo ""
@@ -34,11 +41,12 @@ if [[ "$name" = "-h" || "$name" = "--h" ]] ; then
   echo -e "Example: ${GREEN}wg-clientmgr$ ${YELLOW}clientA_device1 192.168.2.5/32 192.168.2.0/24,10.1.1.1/26,1.1.1.1/32 1.2.3.4:50600${NC}"
   echo ""
   echo -e "${LBLUE}User variables defined in script:${NC}"
-  echo -e "${YELLOW}\$localdir${NC} - directory for new configuration files, currently $localdir"
-  echo -e "${YELLOW}\$localpubkey${NC} - location of VPN server's public key, currently $localpubkey"
-  echo -e "${YELLOW}\$serverint${NC} - Wireguard server interface (typically wg#), currently $serverint"
-  echo -e "${YELLOW}\$servercfg${NC} - location of VPN server interface config file, currently $servercfg"
-  echo -e "${YELLOW}\$clientdns${NC} - DNS servers to use for client (default is OpenDNS), currently $clientdns"
+  echo -e "${YELLOW}\$localdir${NC} - directory for new configuration files, currently ${LBLUE}$localdir${NC}"
+  echo -e "${YELLOW}\$localpubkey${NC} - location of VPN server's public key, currently ${LBLUE}$localpubkey${NC}"
+  echo -e "${YELLOW}\$serverint${NC} - Wireguard server interface (typically wg#), currently ${LBLUE}$serverint${NC}"
+  echo -e "${YELLOW}\$serveraddr${NC} - Wireguard server address and port (addr:port format), currently ${LBLUE}$serveraddr${NC}"
+  echo -e "${YELLOW}\$servercfg${NC} - location of VPN server interface config file, currently ${LBLUE}$servercfg${NC}"
+  echo -e "${YELLOW}\$clientdns${NC} - DNS servers to use for client (default is OpenDNS), currently ${LBLUE}$clientdns${NC}"
   echo ""
   exit
 fi
@@ -49,15 +57,6 @@ if [[ -z "$3" ]] ; then
   echo -e "${RED}Arguments missing${NC}, try ${GREEN}wg-clientmgr --h${NC} for help and examples"
   echo ""
   exit
-fi
-
-#load vpn server address
-if [[ $4 -eq 0 ]] ; then
-  echo ""
-  echo -e "${YELLOW}No server address set, using default address $serveraddr${NC}"
-  echo ""
-  else
-    $serveraddr=$endpoint
 fi
 
 #make private and public keys
