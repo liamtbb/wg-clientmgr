@@ -1,0 +1,173 @@
+#!/bin/bash
+
+#load arguments
+name="$1"
+ip="$2"
+allowed="$3"
+endpoint="$4"
+
+## SET USER VARIABLES HERE ##
+localdir="/etc/wireguard/clients/"
+localpubkey="/etc/wireguard/publickey"
+serverint="wg0"
+servercfg="/etc/wireguard/wg0.conf"
+serveraddr="1.2.3.4:50600"
+clientdns="208.67.222.222, 208.67.220.220"
+
+#set colour codes
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+LBLUE='\033[1;34m'
+YELLOW='\033[0;33m'
+NC='\033[0m' # No Color
+
+#flag for help and examples -h|--h
+if [[ "$name" = "-h" || "$name" = "--h" ]] ; then
+  echo ""
+  echo -e "${LBLUE}Format is:${NC}"
+  echo -e "${GREEN}wg-clientmgr$ ${YELLOW}[clientName] [clientIP] [allowedIPs] [serverIP]${NC}"
+  echo -e "${YELLOW}[clientName]${NC} - Label to be used for generated files, e.g. clientA_device1"
+  echo -e "${YELLOW}[clientIP]${NC} - IP and netmask to be used for client VPN address in CIDR notation (recommend /32 for all clients regardless of actual subnet size), e.g. 192.168.2.5/32"
+  echo -e "${YELLOW}[allowedIPs]${NC} - Client subnet(s) to be filtered through VPN tunnel (separated by ',', no spaces), e.g. 192.168.2.0/24,10.1.1.1/26,1.1.1.1/32 OR 0.0.0.0/0 to tunnel all traffic"
+  echo -e "${YELLOW}[serverIP]${NC} - VPN server public IP and port, e.g. 1.2.3.4:50600"
+  echo ""
+  echo -e "Example: ${GREEN}wg-clientmgr$ ${YELLOW}clientA_device1 192.168.2.5/32 192.168.2.0/24,10.1.1.1/26,1.1.1.1/32 1.2.3.4:50600${NC}"
+  echo ""
+  echo -e "${LBLUE}User variables defined in script:${NC}"
+  echo -e "${YELLOW}\$localdir${NC} - directory for new configuration files, currently $localdir"
+  echo -e "${YELLOW}\$localpubkey${NC} - location of VPN server's public key, currently $localpubkey"
+  echo -e "${YELLOW}\$serverint${NC} - Wireguard server interface (typically wg#), currently $serverint"
+  echo -e "${YELLOW}\$servercfg${NC} - location of VPN server interface config file, currently $servercfg"
+  echo -e "${YELLOW}\$clientdns${NC} - DNS servers to use for client (default is OpenDNS), currently $clientdns"
+  echo ""
+  exit
+fi
+
+#check for missing arguments
+if [[ -z "$3" ]] ; then
+  echo ""
+  echo -e "${RED}Arguments missing${NC}, try ${GREEN}wg-clientmgr --h${NC} for help and examples"
+  echo ""
+  exit
+fi
+
+#load vpn server address
+if [[ $4 -eq 0 ]] ; then
+  echo ""
+  echo -e "${YELLOW}No server address set, using default address $serveraddr${NC}"
+  echo ""
+  else
+    $serveraddr=$endpoint
+fi
+
+#make private and public keys
+function make_keys() {
+  name="$1"
+
+  wg genkey | sudo tee $localdir$name.key | wg pubkey | sudo tee $localdir$name.key.pub
+}
+
+#build config file
+function make_config() {
+  name="$1"
+  ip="$2"
+  allowed=$(echo "$3" | sed 's/, */, /g')
+  serveraddr="$4"
+  localdir="$5"
+
+  echo "$allowed"
+
+  echo "[Interface]" > $localdir$name.conf
+  echo "PrivateKey = $private" >> $localdir$name.conf
+  echo "Address = $ip" >> $localdir$name.conf
+  echo "DNS = 208.67.222.222, 208.67.220.220" >> $localdir$name.conf
+  echo "" >> $localdir$name.conf
+  echo "[Peer]" >> $localdir$name.conf
+  echo "PublicKey = $public" >> $localdir$name.conf
+  echo "AllowedIPs = $allowed" >> $localdir$name.conf
+  echo "Endpoint = $serveraddr" >> $localdir$name.conf
+}
+
+make_keys $name
+
+#load private key
+private=$(<$localdir$name.key)
+
+#load public key
+public=$(<$localpubkey)
+
+make_config $name $ip $allowed $serveraddr $localdir
+
+function add_peer() {
+  name="$1"
+  localdir="$2"
+
+  #check for existing client config
+  if [[ ! -f $localdir$name.key.pub ]] ; then
+    echo "No configuration file for client '$name', aborting."
+    exit
+  fi
+
+  #load public key
+  public=$(<$localdir$name.key.pub)
+
+  #load peer address
+  peer=$(sed -n 's/Address = //p' $localdir$name.conf)
+
+  #add peer entry to server config
+  echo "" >> "$servercfg"
+  echo "## auto-generated entry for client $name" >> "$servercfg"
+  echo "[Peer]" >> "$servercfg"
+  echo "PublicKey = $public" >> "$servercfg"
+  echo "AllowedIPs = $peer" >> "$servercfg"
+  echo "PersistentKeepalive = 25" >> "$servercfg"
+
+  #restart vpn server interface to establish new peer
+  systemctl restart wg-quick@$serverint.service
+
+  #output qr code
+  qrencode -t png -o $localdir$name.png < $localdir$name.conf
+}
+
+function configmenu() {
+  name="$1"
+  localdir="$2"
+
+  echo ""
+  echo -e "${YELLOW}## BEGIN CONFIG FOR CLIENT $name ##${NC}"
+  cat $localdir$name.conf
+  echo -e "${YELLOW}## END CONFIG ##${NC}"
+  echo ""
+  echo -e "${GREEN}Select from the following options:${NC}"
+  echo "Press '1' to apply configuration to Wireguard server"
+  echo "Press '2' to exit application"
+  echo "Press '3' to exit application and remove auto-generated files"
+  echo "Press '4' to review config file"
+  echo ""
+  read -n 1 -p "Input Selection:" menuinput
+  echo ""
+  if [ "$menuinput" = "1" ]; then
+    echo ""
+    add_peer $name $localdir
+    echo "Client $name has been added to active Wireguard peers"
+    echo ""
+    exit
+    elif [ "$menuinput" = "2" ]; then
+      echo ""
+      echo "Exiting application..."
+      echo ""
+      exit
+    elif [ "$menuinput" = "3" ]; then
+      echo ""
+      echo "Exiting application and removing $name's files..."
+      rm $localdir$name.*
+      echo ""
+      exit
+    else
+      echo ""
+      echo -e "${RED}You have entered an invalid selection, please select from the following options:${NC}"
+      configmenu $name $localdir
+  fi
+}
+
+configmenu $name $localdir
