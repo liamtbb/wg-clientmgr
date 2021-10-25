@@ -13,15 +13,27 @@ Bash script to auto-generate client configuration files for Wireguard, includes 
 
 **[serverIP]** - VPN server public IP and port, e.g. 1.2.3.4:50600"
 
+
+
 ### Examples: 
 **4th argument not included, server address set to default**
+
 wg-clientmgr clientA_device1 192.168.2.5/32 192.168.2.0/24,10.1.1.1/26,1.1.1.1/32
+
 **4th argument included, server address '1.2.3.4:50600' overrides default address**
+
 wg-clientmgr clientA_device1 192.168.2.5/32 192.168.2.0/24,10.1.1.1/26,1.1.1.1/32 1.2.3.4:50600 
 
+
+
 ### User variables defined in script:
+
 **$localdir** - directory for new configuration files
+
 **$localpubkey** - location of VPN server's public key
+
 **$serverint** - Wireguard server interface (typically wg#)
+
 **$servercfg** - location of VPN server interface config file
+
 **$clientdns** - DNS servers to use for client (default is OpenDNS)
