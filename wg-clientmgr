@@ -25,7 +25,7 @@ NC='\033[0m' # No Color
 if [[ $4 -eq 0 ]] ; then
   echo ""
   else
-    $serveraddr=$endpoint
+    serveraddr=$endpoint
 fi
 
 #flag for help and examples -h|--h
@@ -101,6 +101,8 @@ make_config $name $ip $allowed $serveraddr $localdir
 function add_peer() {
   name="$1"
   localdir="$2"
+  serverint="$3"
+  graceful="$4"
 
   #check for existing client config
   if [[ ! -f $localdir$name.key.pub ]] ; then
@@ -123,7 +125,11 @@ function add_peer() {
   echo "PersistentKeepalive = 25" >> "$servercfg"
 
   #restart vpn server interface to establish new peer
-  systemctl restart wg-quick@$serverint.service
+  if [[ "$graceful" = "1" ]] ; then
+    wg addconf $serverint <(wg-quick strip $serverint)
+    else
+      systemctl restart wg-quick@$serverint.service
+  fi
 
   #output qr code
   qrencode -t png -o $localdir$name.png < $localdir$name.conf
@@ -133,6 +139,7 @@ function add_peer() {
 function configmenu() {
   name="$1"
   localdir="$2"
+  serverint="$3"
 
   echo ""
   echo -e "${YELLOW}## BEGIN CONFIG FOR CLIENT $name ##${NC}"
@@ -140,25 +147,33 @@ function configmenu() {
   echo -e "${YELLOW}## END CONFIG ##${NC}"
   echo ""
   echo -e "${GREEN}Select from the following options:${NC}"
-  echo "Press '1' to apply configuration to Wireguard server"
-  echo "Press '2' to exit application"
-  echo "Press '3' to exit application and remove auto-generated files"
-  echo "Press '4' to review config file"
+  echo "Press '1' to apply configuration to Wireguard server gracefully (NOT DISRUPTIVE)"
+  echo "Press '2' to apply configuration by restarting Wireguard service (DISRUPTIVE to active sessions but removes deleted peer entries)"
+  echo "Press '3' to exit application"
+  echo "Press '4' to exit application and remove auto-generated files"
   echo ""
   read -n 1 -p "Input Selection:" menuinput
   echo ""
   if [ "$menuinput" = "1" ]; then
     echo ""
-    add_peer $name $localdir
-    echo "Client $name has been added to active Wireguard peers"
+    graceful="1"
+    add_peer $name $localdir $serverint $graceful
+    echo "Client $name has been gracefully added to active Wireguard peers"
     echo ""
     exit
     elif [ "$menuinput" = "2" ]; then
       echo ""
-      echo "Exiting application..."
+      graceful="0"
+      add_peer $name $localdir $serverint $graceful
+      echo "Client $name has been added to active Wireguard peers and WG service has been restarted"
       echo ""
       exit
     elif [ "$menuinput" = "3" ]; then
+      echo ""
+      echo "Exiting application..."
+      echo ""
+      exit
+    elif [ "$menuinput" = "4" ]; then
       echo ""
       echo "Exiting application and removing $name's files..."
       rm $localdir$name.*
@@ -167,8 +182,6 @@ function configmenu() {
     else
       echo ""
       echo -e "${RED}You have entered an invalid selection, please select from the following options:${NC}"
-      configmenu $name $localdir
+      configmenu $name $localdir $serverint
   fi
 }
-
-configmenu $name $localdir
