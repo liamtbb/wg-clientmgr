@@ -1,5 +1,5 @@
 # wg-clientmgr
-Bash script to auto-generate client configuration files for Wireguard, includes QR code and automatic peer installation.
+Bash script for auto-generating Wireguard client configuration files, includes QR code and automatic peer application.
 
 ---
 
