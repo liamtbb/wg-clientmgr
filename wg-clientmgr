@@ -97,6 +97,7 @@ public=$(<$localpubkey)
 
 make_config $name $ip $allowed $serveraddr $localdir
 
+#adds client config as new peer in wg conf file, generates qr code
 function add_peer() {
   name="$1"
   localdir="$2"
@@ -128,6 +129,7 @@ function add_peer() {
   qrencode -t png -o $localdir$name.png < $localdir$name.conf
 }
 
+#config overview and application menu
 function configmenu() {
   name="$1"
   localdir="$2"
