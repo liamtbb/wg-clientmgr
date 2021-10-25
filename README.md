@@ -19,11 +19,11 @@ Bash script for auto-generating Wireguard client configuration files, includes Q
 ### Examples: 
 **4th argument not included, server address set to default**
 
-wg-clientmgr clientA_device1 192.168.2.5/32 192.168.2.0/24,10.1.1.1/26,1.1.1.1/32
+$ wg-clientmgr clientA_device1 192.168.2.5/32 192.168.2.0/24,10.1.1.1/26,1.1.1.1/32
 
 **4th argument included, server address '1.2.3.4:50600' overrides default address**
 
-wg-clientmgr clientA_device1 192.168.2.5/32 192.168.2.0/24,10.1.1.1/26,1.1.1.1/32 1.2.3.4:50600 
+$ wg-clientmgr clientA_device1 192.168.2.5/32 192.168.2.0/24,10.1.1.1/26,1.1.1.1/32 1.2.3.4:50600 
 
 ---
 
