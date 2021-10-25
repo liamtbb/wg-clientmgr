@@ -3,7 +3,7 @@ Bash script to auto-generate client configuration files for Wireguard, includes 
 
 ---
 
-### Format is:
+## Formatting:
 **wg-clientmgr [clientName] [clientIP] [allowedIPs] [serverIP]**
 
 **[clientName]** - Label to be used for generated files, e.g. clientA_device1"
@@ -27,7 +27,7 @@ wg-clientmgr clientA_device1 192.168.2.5/32 192.168.2.0/24,10.1.1.1/26,1.1.1.1/3
 
 ---
 
-### User variables defined in script:
+## User variables defined in script:
 
 **$localdir** - directory for new configuration files
 
