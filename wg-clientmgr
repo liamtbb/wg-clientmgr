@@ -7,10 +7,10 @@ allowed="$3"
 endpoint="$4"
 
 ## SET USER VARIABLES HERE ##
-localdir="/etc/wireguard/clients/"
+localdir="/etc/wireguard/clients/"  ## wireguard clients directory
 localpubkey="/etc/wireguard/publickey"
-serverint="wg0"
-servercfg="/etc/wireguard/wg0.conf"
+serverint="wg0" ## interface used by wireguard
+servercfg="/etc/wireguard/wg0.conf" ## wireguard interface config
 serveraddr="1.2.3.4:50600"
 clientdns="208.67.222.222, 208.67.220.220"
 
